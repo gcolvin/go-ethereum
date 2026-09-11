@@ -77,6 +77,33 @@ func (c *Contract) validJumpdest(dest *uint256.Int) bool {
 	return c.isCode(udest)
 }
 
+// validCallDest reports whether dest is a CALLDEST instruction, the only valid
+// destination of a CALLSUB (EIP-7979).
+func (c *Contract) validCallDest(dest *uint256.Int) bool {
+	udest, overflow := dest.Uint64WithOverflow()
+	if overflow || udest >= uint64(len(c.Code)) {
+		return false
+	}
+	if OpCode(c.Code[udest]) != CALLDEST {
+		return false
+	}
+	return c.isCode(udest)
+}
+
+// validJumpdestEIP7979 is validJumpdest with CALLDEST also accepted: under
+// EIP-7979 a JUMP or JUMPI may enter a subroutine without pushing a return
+// address, which is how compilers eliminate calls.
+func (c *Contract) validJumpdestEIP7979(dest *uint256.Int) bool {
+	udest, overflow := dest.Uint64WithOverflow()
+	if overflow || udest >= uint64(len(c.Code)) {
+		return false
+	}
+	if op := OpCode(c.Code[udest]); op != JUMPDEST && op != CALLDEST {
+		return false
+	}
+	return c.isCode(udest)
+}
+
 // isCode returns true if the provided PC location is an actual opcode, as
 // opposed to a data-segment following a PUSHN operation.
 func (c *Contract) isCode(udest uint64) bool {

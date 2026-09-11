@@ -41,6 +41,11 @@ type ScopeContext struct {
 	Memory   *Memory
 	Stack    *Stack
 	Contract *Contract
+
+	// ReturnStack is the EIP-7979 return stack. It is allocated lazily by the
+	// first CALLSUB in the frame, so frames that never call a subroutine pay
+	// nothing for it.
+	ReturnStack *ReturnStack
 }
 
 // MemoryData returns the underlying memory slice. Callers must not modify the contents
@@ -59,6 +64,15 @@ func (ctx *ScopeContext) StackData() []uint256.Int {
 		return nil
 	}
 	return ctx.Stack.Data()
+}
+
+// ReturnStackData returns the EIP-7979 return stack, innermost return address
+// last. Callers must not modify the contents of the returned data.
+func (ctx *ScopeContext) ReturnStackData() []uint64 {
+	if ctx.ReturnStack == nil {
+		return nil
+	}
+	return ctx.ReturnStack.Data()
 }
 
 // Caller returns the current caller.

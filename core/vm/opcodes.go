@@ -213,6 +213,13 @@ const (
 	LOG4
 )
 
+// 0xb0 range - EIP-7979 call and return ops.
+const (
+	CALLSUB   OpCode = 0xb0
+	CALLDEST  OpCode = 0xb1
+	RETURNSUB OpCode = 0xb2
+)
+
 // 0xd0 range - eof operations.
 const (
 	DATALOAD  OpCode = 0xd0
@@ -418,6 +425,11 @@ var opCodeToString = [256]string{
 	LOG3: "LOG3",
 	LOG4: "LOG4",
 
+	// 0xb0 range - EIP-7979 call and return ops.
+	CALLSUB:   "CALLSUB",
+	CALLDEST:  "CALLDEST",
+	RETURNSUB: "RETURNSUB",
+
 	// 0xd range - eof ops.
 	DATALOAD:  "DATALOAD",
 	DATALOADN: "DATALOADN",
@@ -607,6 +619,9 @@ var stringToOp = map[string]OpCode{
 	"LOG2":            LOG2,
 	"LOG3":            LOG3,
 	"LOG4":            LOG4,
+	"CALLSUB":         CALLSUB,
+	"CALLDEST":        CALLDEST,
+	"RETURNSUB":       RETURNSUB,
 	"DATALOAD":        DATALOAD,
 	"DATALOADN":       DATALOADN,
 	"DATASIZE":        DATASIZE,

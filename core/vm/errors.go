@@ -39,6 +39,12 @@ var (
 	ErrInvalidCode              = errors.New("invalid code: must not begin with 0xef")
 	ErrNonceUintOverflow        = errors.New("nonce uint64 overflow")
 
+	// EIP-7979 errors. An invalid CALLSUB destination is a kind of invalid
+	// jump destination, so it wraps ErrInvalidJump and shares its error code.
+	ErrInvalidCallDest      = fmt.Errorf("%w: not a CALLDEST", ErrInvalidJump)
+	ErrReturnStackOverflow  = errors.New("return stack overflow")
+	ErrReturnStackUnderflow = errors.New("return stack underflow")
+
 	// errStopToken is an internal token indicating interpreter loop termination,
 	// never returned to outside callers.
 	errStopToken = errors.New("stop token")
@@ -153,6 +159,8 @@ const (
 	VMErrorCodeStackUnderflow
 	VMErrorCodeStackOverflow
 	VMErrorCodeInvalidOpCode
+	VMErrorCodeReturnStackOverflow
+	VMErrorCodeReturnStackUnderflow
 
 	// VMErrorCodeUnknown explicitly marks an error as unknown, this is useful when error is converted
 	// from an actual `error` in which case if the mapping is not known, we can use this value to indicate that.
@@ -187,6 +195,10 @@ func vmErrorCodeFromErr(err error) int {
 		return VMErrorCodeInvalidCode
 	case errors.Is(err, ErrNonceUintOverflow):
 		return VMErrorCodeNonceUintOverflow
+	case errors.Is(err, ErrReturnStackOverflow):
+		return VMErrorCodeReturnStackOverflow
+	case errors.Is(err, ErrReturnStackUnderflow):
+		return VMErrorCodeReturnStackUnderflow
 
 	default:
 		// Dynamic errors
