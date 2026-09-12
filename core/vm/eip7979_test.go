@@ -19,6 +19,7 @@ package vm
 import (
 	"bytes"
 	"errors"
+	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -47,6 +48,9 @@ func run7979(t *testing.T, code []byte, gasLimit uint64, extraEips []int, setup 
 	vmctx := BlockContext{
 		CanTransfer: func(StateDB, common.Address, *uint256.Int) bool { return true },
 		Transfer:    func(StateDB, common.Address, common.Address, *uint256.Int, *params.Rules) {},
+		// A nil block number selects no forks at all; block 0 selects every
+		// block-based fork of the test chain config.
+		BlockNumber: big.NewInt(0),
 	}
 	evm := NewEVM(vmctx, statedb, params.AllEthashProtocolChanges, Config{ExtraEips: extraEips})
 	initialGas := NewGasBudget(gasLimit, 0)
