@@ -33,7 +33,7 @@ import (
 
 // run7979 executes code in a fresh state with the given extra EIPs enabled and
 // returns the return data, the gas used and the error. Placeholder opcode
-// values follow the EIP: 0xB0=CALLSUB, 0xB1=CALLDEST, 0xB2=RETURNSUB.
+// values follow the EIP: 0xBB=CALLDEST, 0xBC=CALLSUB, 0xBF=RETURNSUB.
 func run7979(t *testing.T, code []byte, gasLimit uint64, extraEips []int, setup func(db *state.StateDB)) ([]byte, uint64, error) {
 	t.Helper()
 	address := common.BytesToAddress([]byte("contract"))
@@ -69,30 +69,30 @@ func TestEIP7979(t *testing.T) {
 		used    uint64 // expected gas used; ignored when failure != nil
 	}{
 		// The five test cases of EIP-7979.
-		{"simple routine", "0x6004B000B1B2", nil, 17},
-		{"two levels of subroutines", "0x6004B000B16009B0B2B1B2", nil, 34},
-		{"invalid destination", "0x60FFB000B1B2", ErrInvalidCallDest, 0},
-		{"empty return stack", "0xB2", ErrReturnStackUnderflow, 0},
-		{"subroutine at end of code", "0x600556B1B25B6003B0", nil, 29},
+		{"simple routine", "0x6004BC00BBBF", nil, 17},
+		{"two levels of subroutines", "0x6004BC00BB6009BCBFBBBF", nil, 34},
+		{"invalid destination", "0x60FFBC00BBBF", ErrInvalidCallDest, 0},
+		{"empty return stack", "0xBF", ErrReturnStackUnderflow, 0},
+		{"subroutine at end of code", "0x600556BBBF5B6003BC", nil, 29},
 
 		// Destinations.
-		{"CALLSUB to a JUMPDEST", "0x6004B0005B", ErrInvalidCallDest, 0},
-		{"CALLSUB into PUSH data", "0x6005B00060B100", ErrInvalidCallDest, 0},
-		{"CALLSUB out of range", "0x6008B000B1B2", ErrInvalidCallDest, 0},
-		{"CALLSUB destination is also an invalid jump", "0x60FFB000B1B2", ErrInvalidJump, 0},
+		{"CALLSUB to a JUMPDEST", "0x6004BC005B", ErrInvalidCallDest, 0},
+		{"CALLSUB into PUSH data", "0x6005BC0060BB00", ErrInvalidCallDest, 0},
+		{"CALLSUB out of range", "0x6008BC00BBBF", ErrInvalidCallDest, 0},
+		{"CALLSUB destination is also an invalid jump", "0x60FFBC00BBBF", ErrInvalidJump, 0},
 
 		// CALLDEST is a valid JUMP/JUMPI destination (call elimination).
-		{"JUMP to a CALLDEST", "0x60045600B100", nil, 12},
-		{"JUMPI to a CALLDEST", "0x600160065700B100", nil, 17},
-		{"JUMP to a CALLDEST, then RETURNSUB with no caller", "0x60045600B1B2", ErrReturnStackUnderflow, 0},
-		{"tail call: subroutine jumps to another, one return", "0x6004B000B1600856B1B2", nil, 29},
+		{"JUMP to a CALLDEST", "0x60045600BB00", nil, 12},
+		{"JUMPI to a CALLDEST", "0x600160065700BB00", nil, 17},
+		{"JUMP to a CALLDEST, then RETURNSUB with no caller", "0x60045600BBBF", ErrReturnStackUnderflow, 0},
+		{"tail call: subroutine jumps to another, one return", "0x6004BC00BB600856BBBF", nil, 29},
 
 		// CALLDEST as a plain label.
-		{"CALLDEST reached by fall-through", "0xB100", nil, 1},
-		{"fall into subroutine, then RETURNSUB", "0xB1B2", ErrReturnStackUnderflow, 0},
+		{"CALLDEST reached by fall-through", "0xBB00", nil, 1},
+		{"fall into subroutine, then RETURNSUB", "0xBBBF", ErrReturnStackUnderflow, 0},
 
 		// Return stack depth: recursion with no base case halts at 1024.
-		{"recursion overflows the return stack", "0x6004B000B16004B0B2", ErrReturnStackOverflow, 0},
+		{"recursion overflows the return stack", "0x6004BC00BB6004BCBF", ErrReturnStackOverflow, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -124,7 +124,7 @@ func TestEIP7979(t *testing.T) {
 // an ordinary out-of-gas halt.
 func TestEIP7979OutOfGas(t *testing.T) {
 	// PUSH1 (3) + CALLSUB (8) + CALLDEST (1) = 12; RETURNSUB (5) needs 17.
-	code := hexutil.MustDecode("0x6004B000B1B2")
+	code := hexutil.MustDecode("0x6004BC00BBBF")
 	_, used, err := run7979(t, code, 15, []int{7979}, nil)
 	if !errors.Is(err, ErrOutOfGas) {
 		t.Fatalf("error mismatch: have %v, want %v", err, ErrOutOfGas)
@@ -155,7 +155,7 @@ func TestEIP7979ReturnStackIsPerFrame(t *testing.T) {
 	//   16: GAS
 	//   17: STATICCALL
 	//   18: RETURNSUB
-	caller := hexutil.MustDecode("0x600bB060005260206000F3B1600060006000600060bb5AFAB2")
+	caller := hexutil.MustDecode("0x600bbc60005260206000f3bb600060006000600060bb5afabf")
 	callee := common.BytesToAddress([]byte{0xbb})
 
 	tests := []struct {
@@ -165,10 +165,10 @@ func TestEIP7979ReturnStackIsPerFrame(t *testing.T) {
 	}{
 		// A bare RETURNSUB in the callee underflows the callee's (empty)
 		// return stack even though the caller's holds a return address.
-		{"callee underflows its own return stack", "0xB2", 0},
+		{"callee underflows its own return stack", "0xBF", 0},
 		// A well-formed callee subroutine succeeds; the caller's return
 		// address is intact afterwards either way.
-		{"callee uses its own return stack", "0x6004B000B1B2", 1},
+		{"callee uses its own return stack", "0x6004BC00BBBF", 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -194,13 +194,13 @@ func TestEIP7979ReturnStackIsPerFrame(t *testing.T) {
 // legacy semantics are untouched.
 func TestEIP7979Inactive(t *testing.T) {
 	// CALLSUB is an undefined opcode.
-	_, _, err := run7979(t, hexutil.MustDecode("0x6004B000B1B2"), 1_000_000, nil, nil)
+	_, _, err := run7979(t, hexutil.MustDecode("0x6004BC00BBBF"), 1_000_000, nil, nil)
 	var invalidOp *ErrInvalidOpCode
 	if !errors.As(err, &invalidOp) {
 		t.Fatalf("error mismatch: have %v, want invalid opcode", err)
 	}
-	// A JUMP to a 0xB1 byte is an invalid jump.
-	_, _, err = run7979(t, hexutil.MustDecode("0x60045600B100"), 1_000_000, nil, nil)
+	// A JUMP to a 0xBB byte is an invalid jump.
+	_, _, err = run7979(t, hexutil.MustDecode("0x60045600BB00"), 1_000_000, nil, nil)
 	if !errors.Is(err, ErrInvalidJump) {
 		t.Fatalf("error mismatch: have %v, want %v", err, ErrInvalidJump)
 	}

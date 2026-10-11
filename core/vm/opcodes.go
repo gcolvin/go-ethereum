@@ -213,11 +213,11 @@ const (
 	LOG4
 )
 
-// 0xb0 range - EIP-7979 call and return ops.
+// 0xb0 range - EIP-7979 call and return ops; 0xbd and 0xbe are left for EIP-8173.
 const (
-	CALLSUB   OpCode = 0xb0
-	CALLDEST  OpCode = 0xb1
-	RETURNSUB OpCode = 0xb2
+	CALLDEST  OpCode = 0xbb
+	CALLSUB   OpCode = 0xbc
+	RETURNSUB OpCode = 0xbf
 )
 
 // 0xd0 range - eof operations.
@@ -425,7 +425,7 @@ var opCodeToString = [256]string{
 	LOG3: "LOG3",
 	LOG4: "LOG4",
 
-	// 0xb0 range - EIP-7979 call and return ops.
+	// 0xb0 range - EIP-7979 call and return ops; 0xbd and 0xbe are left for EIP-8173.
 	CALLSUB:   "CALLSUB",
 	CALLDEST:  "CALLDEST",
 	RETURNSUB: "RETURNSUB",
